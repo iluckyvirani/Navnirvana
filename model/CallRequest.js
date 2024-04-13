@@ -9,7 +9,7 @@ const contactRequestSchema = new mongoose.Schema({
     },
     category: {
         type: String,
-        enum: ['general', 'insurance'],
+        enum: ['general', 'insurance', 'loans','credit_cards', 'investments','mutual_funds' ],
         required: true
     },
     comment: {
