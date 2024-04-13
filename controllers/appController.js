@@ -1,9 +1,8 @@
 import userModel from "../model/user.model.js";
 import adminModel from "../model/adminmodel.js";
-import UserComment from "../model/getallcomment.model.js"
+import ContactRequest from '../model/CallRequest.js';
 import bcrypt from 'bcrypt';
 import jwt from "jsonwebtoken";
-import Comment from "../model/comment.model.js";
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import otpGenerator from 'otp-generator';
@@ -191,40 +190,45 @@ export async function login(req, res) {
     const { phone, password } = req.body;
 
     try {
+        // Find user by phone number
         const user = await userModel.findOne({ phone });
 
+        // Check if user exists
         if (!user) {
-            return res.status(404).send({ error: "Phone number not found" });
+            return res.status(404).json({ error: "Phone number not found" });
         }
 
-        const passwordCheck = await bcrypt.compare(password, user.password);
-
-        if (!passwordCheck) {
-            return res.status(400).send({ error: "Incorrect password" });
+        // Validate password
+        const passwordValid = await bcrypt.compare(password, user.password);
+        if (!passwordValid) {
+            return res.status(400).json({ error: "Incorrect password" });
         }
 
         // Generate OTP and timestamp
         const { otp, timestamp } = generateOTP();
 
-        // After generating OTP, send email to the user
-        await LoginOTPEmail(user.email, otp);
+        // Send OTP to the user via email
+        await sendOTPEmail(user.email, otp);
 
         // Generate JWT token
         const token = jwt.sign({
             userId: user._id,
             phone: user.phone
-        }, process.env.JWT_SECRET, { expiresIn: "24h" });
+        }, process.env.JWT_SECRET, {
+            expiresIn: "24h"
+        });
 
-        // TODO: Send OTP to the user via SMS or email
-
-        return res.status(200).send({
-            msg: "Login successful.",
-            phone: user.phone,
-            token // Include the JWT token in the response
+        // Return success response with token
+        return res.status(200).json({
+            message: "Login successful.",
+            data: {
+                phone: user.phone,
+                token
+            }
         });
     } catch (error) {
-        console.error("Error:", error);
-        return res.status(500).send({ error: "Internal server error" });
+        console.error("Error during login:", error);
+        return res.status(500).json({ error: "Internal server error" });
     }
 }
 
@@ -503,61 +507,7 @@ export async function getAllUsers(req, res) {
 }
 
 
-// POST endpoint for submitting comment and selecting service
-export async function addComment(req, res) {
-    try {
-        const { comment, selectedService } = req.body;
 
-        // Check if comment and selected service are provided
-        if (!comment || !selectedService) {
-            return res.status(400).json({ error: "Comment and selected service are required" });
-        }
-
-        // Validate selected service
-        const serviceOptions = ['general', 'insurance', 'loans', 'credit cards', 'investments', 'mutual funds'];
-        if (!serviceOptions.includes(selectedService)) {
-            return res.status(400).json({ error: "Invalid selected service" });
-        }
-
-        // Create new comment instance
-        const newComment = new Comment({
-            comment,
-            selectedService
-        });
-
-        // Save comment to the database
-        await newComment.save();
-
-        // Respond with success message
-        return res.status(200).json({ message: "Comment submitted successfully" });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Internal server error" });
-    }
-}
-
-export async function getAllComments(req, res) {
-    try {
-        // Query the database to retrieve comments and selected services for each user
-        const userComments = await UserComment.find().populate('customerId');
-
-        // Format the response data
-        const userData = userComments.map(userComment => {
-            return {
-                customerId: userComment.customerId._id,
-                commentId: userComment._id,
-                comment: userComment.comment,
-                selectedService: userComment.selectedService
-            };
-        });
-
-        // Return the data as a response
-        res.status(200).json(userData);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Internal server error" });
-    }
-}
 
 
 
@@ -639,43 +589,43 @@ export async function adminregister(req, res) {
      
      */
 
-    export async function adminlogin(req, res) {
-        const { phone, password } = req.body;
-    
-        try {
-            // Find the admin by phone number
-            const admin = await adminModel.findOne({ phone });
-            if (!admin) {
-                return res.status(404).send({ error: "Phone number not found" });
-            }
-    
-            // Compare the provided password with the stored password
-            const passwordCheck = await bcrypt.compare(password, admin.password);
-            if (!passwordCheck) {
-                return res.status(400).send({ error: "Incorrect password" });
-            }
-    
-            // Generate JWT token
-            const token = jwt.sign({
-                userId: admin._id,
-                phone: admin.phone
-            }, process.env.JWT_SECRET, { expiresIn: "24h" });
-    
-            // Generate OTP (optional)
-            const otp = otpGenerator.generate(6, { upperCase: false, specialChars: false });
-    
-            // TODO: Send OTP to the user via SMS or email
-    
-            // Send a successful response with the token and optionally, the OTP
-            return res.status(200).send({
-                msg: "Login successful.",
-                token,
-            });
-        } catch (error) {
-            console.error("Error during admin login:", error);
-            return res.status(500).send({ error: "Internal server error" });
+export async function adminlogin(req, res) {
+    const { phone, password } = req.body;
+
+    try {
+        // Find the admin by phone number
+        const admin = await adminModel.findOne({ phone });
+        if (!admin) {
+            return res.status(404).send({ error: "Phone number not found" });
         }
+
+        // Compare the provided password with the stored password
+        const passwordCheck = await bcrypt.compare(password, admin.password);
+        if (!passwordCheck) {
+            return res.status(400).send({ error: "Incorrect password" });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign({
+            userId: admin._id,
+            phone: admin.phone
+        }, process.env.JWT_SECRET, { expiresIn: "24h" });
+
+        // Generate OTP (optional)
+        const otp = otpGenerator.generate(6, { upperCase: false, specialChars: false });
+
+        // TODO: Send OTP to the user via SMS or email
+
+        // Send a successful response with the token and optionally, the OTP
+        return res.status(200).send({
+            msg: "Login successful.",
+            token,
+        });
+    } catch (error) {
+        console.error("Error during admin login:", error);
+        return res.status(500).send({ error: "Internal server error" });
     }
+}
 
 //  GET :http://localhost:5000/api/getalluser
 export async function getAllAdmin(req, res) {
@@ -699,3 +649,154 @@ export async function getAllAdmin(req, res) {
     }
 }
 
+
+
+
+
+// call request
+
+
+export async function createContactRequest(req, res) {
+    try {
+        // Destructure `category` and `comment` from the request body
+        const { category, comment } = req.body;
+        // Extract the user ID from the authenticated user
+        const userId = req.user.id;
+
+        // Log inputs for debugging
+        console.log('userId:', userId);
+        console.log('category:', category);
+        console.log('comment:', comment);
+
+        // Validate inputs
+        if (!category || !comment) {
+            throw new Error('Missing required fields: category and comment');
+        }
+
+        // Create a new contact request object
+        const newContactRequest = new ContactRequest({
+            userId,
+            category,
+            comment,
+        });
+
+        // Save the new contact request
+        await newContactRequest.save();
+
+        // Return a success response with the newly created contact request
+        res.status(201).json({
+            message: 'Contact request created successfully.',
+            data: newContactRequest,
+        });
+    } catch (err) {
+        // Log the error for debugging
+        console.error('Error creating contact request:', err);
+
+        // Handle different error types and provide specific HTTP status codes
+        if (err.name === 'ValidationError' || err.name === 'CastError') {
+            // Respond with a 400 Bad Request status for validation or casting errors
+            res.status(400).json({ error: 'Invalid data provided: ' + err.message });
+        } else {
+            // Respond with a 500 Internal Server Error status for other errors
+            res.status(500).json({ error: 'Failed to create contact request1: ' + err.message });
+        }
+    }
+};
+
+
+export async function getAllContactRequests(req, res) {
+    try {
+        // Find all contact requests and populate the user details
+        const contactRequests = await ContactRequest.find()
+            .populate('userId', 'name email phone') // Populate user details (name and email)
+
+        // Return a success response with the list of contact requests
+        res.status(200).json({
+            message: 'Retrieved all contact requests successfully.',
+            data: contactRequests,
+        });
+    } catch (err) {
+        // Log the error for debugging
+        console.error('Error retrieving contact requests:', err);
+
+        // Respond with a 500 Internal Server Error status for other errors
+        res.status(500).json({ error: 'Failed to retrieve contact requests: ' + err.message });
+    }
+}
+
+
+export async function getContactRequestById(req, res) {
+    try {
+        // Extract the request ID from the route parameters
+        const requestId = req.params.requestId;
+
+        // Find the contact request by its ID
+        const contactRequest = await ContactRequest.findById(requestId)
+        .populate('userId', 'name email phone') // Populate user details (name and email)
+
+        // Check if the contact request was found
+        if (!contactRequest) {
+            return res.status(404).json({ error: 'Contact request not found' });
+        }
+
+        // Return the retrieved contact request as a JSON response
+        res.status(200).json({
+            message: 'Contact request retrieved successfully.',
+            data: contactRequest,
+        });
+    } catch (err) {
+        // Log the error for debugging
+        console.error('Error retrieving contact request:', err);
+
+        // Respond with a 500 Internal Server Error status for other errors
+        res.status(500).json({ error: 'Failed to retrieve contact request: ' + err.message });
+    }
+}
+
+
+
+
+// Define the function to update the status of a contact request
+export async function updateContactRequestStatus(req, res) {
+    try {
+        // Extract the request ID from the URL parameters
+        const { requestId } = req.params;
+        
+        // Extract the new status from the request body
+        const { status } = req.body;
+
+        // Validate the new status value
+        const validStatuses = ['complete', 'pending', 'rejected'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ error: 'Invalid status value' });
+        }
+
+        // Log the incoming request ID and status for debugging
+        console.log('Request ID:', requestId);
+        console.log('New status:', status);
+
+        // Find the contact request by its ID and update its status
+        const contactRequest = await ContactRequest.findByIdAndUpdate(
+            requestId,
+            { status },
+            { new: true } // Return the updated document
+        );
+
+        // If the contact request was not found, return a 404 error
+        if (!contactRequest) {
+            return res.status(404).json({ error: 'Contact request not found' });
+        }
+
+        // Return a success response with the updated contact request
+        res.json({
+            message: 'Contact request status updated successfully.',
+            data: contactRequest
+        });
+    } catch (err) {
+        // Log the error for debugging
+        console.error('Error updating contact request status:', err);
+        
+        // Return a 500 Internal Server Error response for other errors
+        res.status(500).json({ error: 'Failed to update contact request status' });
+    }
+}

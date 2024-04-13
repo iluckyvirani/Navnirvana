@@ -1,32 +1,50 @@
 import jwt from 'jsonwebtoken';
-// import ENV from '../config.js'
 import dotenv from 'dotenv';
+
 dotenv.config();
 
-/** auth middleware */
-export default async function Auth(req, res, next){
+/** Auth middleware */
+export default async function Auth(req, res, next) {
     try {
-        
-        // access authorize header to validate request
-        const token = req.headers.authorization.split(" ")[1];
+        // Check if the Authorization header exists and is in the correct format
+        const authorizationHeader = req.headers.authorization;
+        if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Authorization header missing or incorrect format' });
+        }
 
-        // retrive the user details fo the logged in user
+        // Extract token from the header
+        const token = authorizationHeader.split(' ')[1];
+
+        // Verify the token and retrieve user details
         const decodedToken = await jwt.verify(token, process.env.JWT_SECRET);
 
-        req.user = decodedToken;
+        // Ensure the decoded token contains the required user ID
+        if (!decodedToken || !decodedToken.userId) {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
 
-        next()
+        // Attach user information to the request object
+        req.user = {
+            id: decodedToken.userId,
+            ...decodedToken // Attach additional properties as needed
+        };
 
+        // Proceed to the next middleware function
+        next();
     } catch (error) {
-        res.status(401).json({ error : "Authentication Failed!"})
+        // Log the error if necessary
+        console.error('Authentication error:', error);
+
+        // Handle errors by sending a 401 Unauthorized status
+        res.status(401).json({ error: 'Authentication failed' });
     }
 }
 
-
-export function localVariables(req, res, next){
+/** Local variables middleware */
+export function localVariables(req, res, next) {
     req.app.locals = {
-        OTP : null,
-        resetSession : false
-    }
-    next()
+        OTP: null,
+        resetSession: false
+    };
+    next();
 }
