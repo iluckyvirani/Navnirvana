@@ -207,13 +207,20 @@ export async function login(req, res) {
         // Generate OTP and timestamp
         const { otp, timestamp } = generateOTP();
 
+         // Update OTP in the database for the user
+         user.verifyOTP = otp; // Assuming `otp` is a field in the user schema/model
+         user.otpTimestamp = timestamp; // Assuming you want to store the OTP creation timestamp
+         await user.save(); // Save the user record with the updated OTP and timestamp
+ 
+
         // Send OTP to the user via email
         await sendOTPEmail(user.email, otp);
 
         // Generate JWT token
         const token = jwt.sign({
             userId: user._id,
-            phone: user.phone
+            phone: user.phone,
+            verifyOTP: otp,
         }, process.env.JWT_SECRET, {
             expiresIn: "24h"
         });
@@ -224,6 +231,7 @@ export async function login(req, res) {
             data: {
                 phone: user.phone,
                 Email:user.email,
+                OTP: otp,
                 token
             }
         });
