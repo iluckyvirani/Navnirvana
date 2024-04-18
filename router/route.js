@@ -16,7 +16,7 @@ router.route('/login').post(controller.verifyUser, controller.login); // login i
 // GET Methods
 router.route('/user/:name').get(getuser); //user with username 
 router.route('/generatepasswordOTP').get(controller.verifyUser, localVariables, controller.generatepasswordOTP); // generate random OTP
-router.route('/verifyOTP').get(controller.verifyOTP); // verify generated OTP
+router.route('/verifyOTP').post(controller.verifyOTP); // verify generated OTP
 // router.route('/createResetSession').get(controller.createResetSession); // reset all the variables
 router.route('/getalluser').get(controller.getAllUsers); // Route to get all users
 // PUT Methods

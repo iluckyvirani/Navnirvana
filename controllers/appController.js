@@ -41,14 +41,14 @@ async function sendOTPEmail(email, otp) {
         service: 'Gmail',
         port: 587,
         auth: {
-            user: "cseshivangi599@gmail.com",
-            pass: "lxvk yunu sjoa xfmg"
+            user: "contactus@navnirvana.com",
+            pass: "tijz mhxn odew cfby"
         }
     });
 
     // email message 
     let mailOptions = {
-        from: '"NavNirvana" <cseshivangi599@gmail.com>',
+        from: '"NavNirvana" <contactus@navnirvana.com>',
         to: email,
         subject: 'OTP Verification',
         text: `Your OTP for registration is: ${otp}`
@@ -78,14 +78,14 @@ async function LoginOTPEmail(email, otp) {
         service: 'Gmail',
         port: 587,
         auth: {
-            user: "cseshivangi599@gmail.com",
-            pass: "lxvk yunu sjoa xfmg"
+            user: "contactus@navnirvana.com",
+            pass: "tijz mhxn odew cfby"
         }
     });
 
     // email message 
     let mailOptions = {
-        from: '"NavNirvana" <cseshivangi599@gmail.com>',
+        from: '"NavNirvana" <contactus@navnirvana.com>',
         to: email,
         subject: 'OTP Verification',
         text: `Your OTP for Login : ${otp}`
@@ -155,15 +155,15 @@ export async function register(req, res) {
 
         // After generating OTP, send email to the user
         await sendOTPEmail(email, otp);
-        console.log(timestamp)
+        // console.log(timestamp)
         // Create new user with OTP and timestamp
         const newUser = new userModel({
             name,
             email,
             phone,
             password: hashedPassword,
-            verifyOTP: otp, // Save the OTP along with user data
-            OTPtimeperiod: timestamp // Save the OTP timestamp along with user data
+            verifyOTP: otp,
+            OTPtimeperiod: timestamp
         });
 
         // Save user to database
@@ -360,6 +360,7 @@ export async function verifyOTP(req, res) {
 }
 
 
+
 //update the password when we have valid session
 /** PUT :http://localhost:5000/api/resetPassword */
 export async function resetPassword(req, res) {
@@ -454,14 +455,14 @@ async function sendPasswordResetEmail(email, resetToken) {
         const transporter = nodemailer.createTransport({
             service: 'gmail', // e.g., 'gmail'
             auth: {
-                user: 'cseshivangi599@gmail.com',
-                pass: 'lxvk yunu sjoa xfmg',
+                user: 'contactus@navnirvana.com',
+                pass: 'tijz mhxn odew cfby',
             },
         });
 
         // Define email options
         const mailOptions = {
-            from: '"NavNirvana" <cseshivangi599@gmail.com>',
+            from: '"NavNirvana" <contactus@navnirvana.com',
             to: email,
             subject: 'Password Reset OTP',
             html: `
@@ -732,7 +733,7 @@ export async function getContactRequestById(req, res) {
 
         // Find the contact request by its ID
         const contactRequest = await ContactRequest.findById(requestId)
-        .populate('userId', 'name email phone') // Populate user details (name and email)
+            .populate('userId', 'name email phone') // Populate user details (name and email)
 
         // Check if the contact request was found
         if (!contactRequest) {
@@ -761,7 +762,7 @@ export async function updateContactRequestStatus(req, res) {
     try {
         // Extract the request ID from the URL parameters
         const { requestId } = req.params;
-        
+
         // Extract the new status from the request body
         const { status } = req.body;
 
@@ -795,7 +796,7 @@ export async function updateContactRequestStatus(req, res) {
     } catch (err) {
         // Log the error for debugging
         console.error('Error updating contact request status:', err);
-        
+
         // Return a 500 Internal Server Error response for other errors
         res.status(500).json({ error: 'Failed to update contact request status' });
     }
