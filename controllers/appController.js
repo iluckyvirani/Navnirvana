@@ -223,6 +223,7 @@ export async function login(req, res) {
             message: "Login successful.",
             data: {
                 phone: user.phone,
+                Email:user.email,
                 token
             }
         });
@@ -231,6 +232,7 @@ export async function login(req, res) {
         return res.status(500).json({ error: "Internal server error" });
     }
 }
+
 
 /** GET :http://localhost:5000/api/user/name
 //  * @param {
